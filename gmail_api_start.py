@@ -140,7 +140,7 @@ def create_message(sender, to, subject, message_text):
   message['to'] = to
   message['from'] = sender
   message['subject'] = subject # same as subject you respond to
-  message['threadId'] = 'id responding to'
+  message['threadId'] = threadid # same as threadid you respond to
   return {'raw': base64.urlsafe_b64encode(message.as_string())}
 
 
@@ -154,9 +154,10 @@ def main():
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('gmail', 'v1', http=http)
 
+    # Decide on logic for initial blast vs ongoing 04/23/2017
     labels = ListMessagesMatchingQuery(service = service, user_id = 'me', query = '*@marketplace.amazon.com')
 
-    messages = {}
+
     for i in labels: 
         message = GetMessage(service,'me',i['id'])
         #print(message)
@@ -167,10 +168,23 @@ def main():
                 subject = header['value']
             if header['name'] == 'Reply-To':
                 print('Message Reply-To: %s' % header['value'].encode("utf-8"))
-                subject = header['value']
+                reply_to = header['value']
         print(message['threadId'])
-
+        threadid = message['threadId']
+        body = '''
+        Every Time I get one of these so do you!
         
+        Stop letting Marketplace email customers!!!!
+
+        Here's a link to the code creating this automated email:
+        https://github.com/slayton4112/amazon_marketplace_reply/blob/master/gmail_api_start.py        
+        '''
+        to = 'jeff@amazon.com, cis@amazon.com, ' + reply_to
+        sender = service.users().getProfile(userId='me').execute()['emailAddress']
+        print(sender)
+        message = create_message(sender=sender, to=to, subject=subject, message_text = body)
+
+        # send_message(service, 'me', message) # uncomment to actually send
 
     #print(json.dumps(messages,sort_keys=True,indent=4))
 
